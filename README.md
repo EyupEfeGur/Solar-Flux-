@@ -23,11 +23,5 @@ Bu uygulama, INTERMAGNET standartlarını sağlayan 13 adet “subauroral” gö
 * **[Streamlit](https://streamlit.io/):** Web arayüzü ve hızlı prototipleme
 * **[Pandas](https://pandas.pydata.org/):** Veri işleme ve analizi (DataFrame yönetimi)
 
-## 🚀 Kurulum ve Çalıştırma
-
-Projeyi kendi bilgisayarınızda yerel olarak çalıştırmak için aşağıdaki adımları izleyebilirsiniz:
-
-**1. Depoyu Klonlayın:**
-```bash
 git clone [https://github.com/kullanici-adiniz/proje-adiniz.git](https://github.com/kullanici-adiniz/proje-adiniz.git)
 cd proje-adiniz
