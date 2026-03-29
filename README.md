@@ -23,5 +23,3 @@ Bu uygulama, INTERMAGNET standartlarını sağlayan 13 adet “subauroral” gö
 * **[Streamlit](https://streamlit.io/):** Web arayüzü ve hızlı prototipleme
 * **[Pandas](https://pandas.pydata.org/):** Veri işleme ve analizi (DataFrame yönetimi)
 
-git clone [https://github.com/kullanici-adiniz/proje-adiniz.git](https://github.com/kullanici-adiniz/proje-adiniz.git)
-cd proje-adiniz
