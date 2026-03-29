@@ -1,0 +1,435 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import xgboost
+from sklearn.preprocessing import LabelEncoder, RobustScaler, StandardScaler, MinMaxScaler
+from sklearn.feature_selection import SequentialFeatureSelector
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import StackingRegressor, ExtraTreesClassifier, AdaBoostClassifier, BaggingClassifier
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+from sklearn.neighbors import KNeighborsRegressor
+from xgboost import XGBRegressor, XGBClassifier
+from lightgbm import LGBMRegressor
+from catboost import CatBoostRegressor
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.model_selection import train_test_split, cross_val_score, TimeSeriesSplit
+from sklearn.feature_selection import RFE
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.ensemble import StackingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+
+# ─────────────────────────────────────────────────────────────
+import streamlit as st
+import pandas as pd
+from streamlit import set_page_config
+
+# ─────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Solar Flux PNL",
+    page_icon="vbp.jpg",
+    layout="wide",
+)
+
+
+def sayfa_degistir(yeni_sayfa):
+    st.session_state.sayfa = yeni_sayfa
+
+
+if 'sayfa' not in st.session_state:
+    st.session_state.sayfa = "Ana Sayfa"
+
+# ─────────────────────────────────────────────────────────────
+
+st.sidebar.button(":gray[Güneş Fırtına Paneli]", use_container_width=True, disabled=True)
+
+st.sidebar.markdown("""
+<div style='position:fixed; bottom:20px; font-family:"IBM Plex Mono",monospace; 
+    font-size:0.9rem; color:#FFFFFF; padding:5px;'>
+    Kaynak: OMNI / NASA · NOAA
+</div>
+""", unsafe_allow_html=True)
+
+st.sidebar.markdown("""
+    <style>
+        html, body, [class*="css"] {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background-color: #0a0e1a;
+            color: #c8d8e8;
+        }
+
+        section[data-testid="stSidebar"] {
+            background-color: #0d1420;
+            border-right: 1px solid #1e3a5f;
+        }
+
+        section[data-testid="stSidebar"] .stButton > button {
+            background: transparent;
+            color: #7eb8d4;
+            border: 1px solid #1e3a5f;
+            border-radius: 4px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            margin-bottom: 4px;
+        }
+
+        /* BEYAZ ÇERÇEVE ZIMBIRTISI */
+        section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+            border: 1px solid #FFFFFF !important; 
+            color: #FFFFFF !important; 
+            background: rgba(255, 255, 255, 0.05) !important; 
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────────────────────
+
+st.sidebar.button(
+    "ANA SAYFA",
+    use_container_width=True,
+    on_click=sayfa_degistir, args=("Ana Sayfa",),
+    type="primary" if st.session_state.sayfa == "Ana Sayfa" else "secondary"
+)
+
+st.sidebar.button(
+    "Veri İşleme",
+    use_container_width=True,
+    on_click=sayfa_degistir, args=("Veri İşleme",),
+    type="primary" if st.session_state.sayfa == "Veri İşleme" else "secondary"
+)
+
+st.sidebar.button(
+    "Çalışmamız Hakkında",
+    use_container_width=True,
+    on_click=sayfa_degistir, args=("Çalışmamız Hakkında",),
+    type="primary" if st.session_state.sayfa == "Çalışmamız Hakkında" else "secondary"
+)
+
+st.sidebar.button(
+    "Güneş Fırtınıları Hakkında ?",
+    use_container_width=True,
+    on_click=sayfa_degistir, args=("Güneş Fırtınıları Hakkında ?",),
+    type="primary" if st.session_state.sayfa == "Güneş Fırtınıları Hakkında ?" else "secondary"
+)
+
+st.sidebar.button(
+    "Hakkımızda",
+    use_container_width=True,
+    on_click=sayfa_degistir, args=("Hakkımızda",),
+    type="primary" if st.session_state.sayfa == "Hakkımızda" else "secondary"
+)
+
+baslik_stili = """
+    <div style="
+        text-align: center; 
+        margin-top: -30px; 
+        margin-bottom: 30px;          
+        background: rgba(1, 28, 70, 0.6); /* Hafif lacivert arka plan */
+        color: #7eb8d4;
+        border: 2px solid #7eb8d4; /* Belirgin çerçeve */
+        border-radius: 8px; /* Yuvarlatılmış köşeler */
+        box-shadow: 0 4px 15px rgba(126, 184, 212, 0.2); /* Parlama efekti */
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 1.8rem; 
+        letter-spacing: 0.08em;
+        padding: 15px;
+        text-transform: uppercase;">
+"""
+
+# ─────────────────────────────────────────────────────────────
+
+if st.session_state.sayfa == "Ana Sayfa":
+
+    st.markdown(f"{baslik_stili}<b>VERİ BİLİMİ ve İNOVATİF DÜŞÜNME</b></div>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="
+        background: rgba(1, 28, 70, 0.25);
+        backdrop-filter: blur(10px);
+        padding: 50px;
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+        font-size: 20px; 
+        line-height: 1.7; 
+    ">  
+    <b>Bu proje, Streamlit tabanlı bir veri analiz ve görselleştirme uygulaması olarak geliştirilmiştir. Amaç, kullanıcıların karmaşık verileri hızlı, anlaşılır ve etkileşimli bir şekilde inceleyebilmesini sağlamaktır.<br><br>
+</b>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+    try:
+
+        sutunlar = ['Yil', 'Gun_No', 'Saat', 'Scalar_B', 'Bz', 'Yogunluk', 'Hiz', 'Kp']
+        df = pd.read_csv("fırtınatahmın3.txt", sep=r'\s+', names=sutunlar, skiprows=11, low_memory=False)
+
+        df = df.groupby(df.index // 3).median()
+        df = df.replace([9999, 999.9], np.nan).interpolate().ffill().bfill()
+        df["Kp"] = df["Kp"] / 10
+        df["tahmın_Kp"] = df["Kp"].shift(-1)
+        df["Enerji_Indeksi"] = df["Hiz"] * df["Bz"]
+        df["Hiz_EMA"] = df['Hiz'].ewm(span=6, adjust=False).mean()
+        df["1_saat_Scalar_B"] = df["Scalar_B"].shift(1)
+        df.dropna(how="any", inplace=True)
+
+        ozellikler = ["Yil", "Gun_No", "Saat", "Scalar_B", "Bz", "Yogunluk", "Hiz", "Hiz_EMA", "1_saat_Scalar_B",
+                      "Enerji_Indeksi"]
+        x = df[ozellikler]
+        y = df["tahmın_Kp"]
+
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=42, shuffle=False)
+
+        scaler = MinMaxScaler()
+        x_train_scaled = scaler.fit_transform(x_train)
+        x_test_scaled = scaler.transform(x_test)
+
+        model = XGBRegressor(colsample_bytree=0.8, gamma=0.1, learning_rate=0.05, max_depth=3, n_estimators=500,
+                             subsample=0.8)
+        model.fit(x_train_scaled, y_train)
+        prediction = model.predict(x_test_scaled)
+
+
+        st.write("<br><br>", unsafe_allow_html=True)
+        st.markdown("<h4 style='text-align: center; color: #7eb8d4;'>Model Başarı Grafiği</h4>",
+                    unsafe_allow_html=True)
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+        fig.patch.set_facecolor('#0a0e1a')
+        ax.set_facecolor('#0d1420')
+        ax.tick_params(colors='white', which='both')
+        ax.spines['bottom'].set_color('white')
+        ax.spines['left'].set_color('white')
+
+        ax.plot(y_test.values[:100], label="Gerçek Kp", color="#2ecc71", linewidth=2)
+        ax.plot(prediction[:100], label="Tahmin Kp", color="#e74c3c", linestyle="--", linewidth=2)
+        ax.legend(facecolor='#0a0e1a', edgecolor='white', labelcolor='white')
+
+        st.pyplot(fig)
+
+    except Exception:
+        # Ana sayfada dosya bulunamazsa kırmızı hata verip tasarımı bozmasın diye sessizce geçiyoruz
+        pass
+
+
+elif st.session_state.sayfa == "Veri İşleme":
+
+    st.markdown(f"{baslik_stili}<b>VERİ İŞLEME PANELİ</b></div>", unsafe_allow_html=True)
+
+    try:
+
+        sutunlar = ['Yil', 'Gun_No', 'Saat', 'Scalar_B', 'Bz', 'Yogunluk', 'Hiz', 'Kp']
+        df = pd.read_csv("fırtınatahmın3.txt", sep=r'\s+', names=sutunlar, skiprows=11, low_memory=False)
+
+        df = df.groupby(df.index // 3).median()
+        df = df.replace(9999, np.nan)
+        df = df.replace(999.9, np.nan)
+        df = df.interpolate()
+
+        df["Kp"] = df["Kp"] / 10
+        df["tahmın_Kp"] = df["Kp"].shift(-1)
+        df = df.ffill().bfill()
+        df["Hiz_Degisimi"] = df["Hiz"].diff(periods=1)
+        df["1_saat_Scalar_B"] = df["Scalar_B"].shift(1)
+        df["Enerji_Indeksi"] = df["Hiz"] * df["Bz"]
+        df["Hiz_EMA"] = df['Hiz'].ewm(span=6, adjust=False).mean()
+        df.dropna(how="any", inplace=True)
+
+        ozellikler = ["Yil", "Gun_No", "Saat", "Scalar_B", "Bz", "Yogunluk", "Hiz", "Hiz_EMA", "1_saat_Scalar_B",
+                      "Enerji_Indeksi"]
+        x = df[ozellikler]
+        y = df["tahmın_Kp"]
+
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=42, shuffle=False)
+
+
+        scaler = MinMaxScaler()
+        x_train_scaled = scaler.fit_transform(x_train)
+        x_test_scaled = scaler.transform(x_test)
+
+        # MODEL EĞİTİMİ
+        model = XGBRegressor(colsample_bytree=0.8, gamma=0.1, learning_rate=0.05, max_depth=3, n_estimators=500,
+                             subsample=0.8)
+        model.fit(x_train_scaled, y_train)
+
+        st.success("Veri seti işlendi ve makine öğrenimi modeli başarıyla eğitildi!")
+
+
+        prediction = model.predict(x_test_scaled)
+        r2 = r2_score(y_test, prediction)
+        mae = mean_absolute_error(y_test, prediction)
+
+        metrik1, metrik2 = st.columns(2)
+        metrik1.metric(label="Model Doğruluk Oranı (R² Skoru)", value=f"{r2:.3f}")
+        metrik2.metric(label="Ortalama Hata Payı (MAE)", value=f"{mae:.3f}")
+
+        st.divider()
+
+
+        son_satir = df[ozellikler].tail(1)
+        son_satir_scaled = scaler.transform(son_satir)
+        tahmin_edilen_kp = model.predict(son_satir_scaled)[0]
+
+        yil = int(son_satir['Yil'].iloc[0])
+        gun = int(son_satir['Gun_No'].iloc[0])
+        saat = int(son_satir['Saat'].iloc[0])
+
+        st.info(
+            f" **{yil} Yılı, {gun}. Gün, Saat {saat}:00** verilerinden yola çıkarak hesaplanan 1 saat sonraki tahmini **Kp Değeri**: **{tahmin_edilen_kp:.2f}**")
+
+        st.write("<br>", unsafe_allow_html=True)
+
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+
+        fig.patch.set_facecolor('#0a0e1a')
+        ax.set_facecolor('#0d1420')
+
+
+        ax.tick_params(colors='white', which='both')
+        ax.spines['bottom'].set_color('white')
+        ax.spines['left'].set_color('white')
+
+
+        ax.plot(y_test.values[:100], label="Gerçek Kp", color="#2ecc71", linewidth=2)  # Yeşil
+        ax.plot(prediction[:100], label="Tahmin Kp", color="#e74c3c", linestyle="--", linewidth=2)  # Kırmızı
+
+        ax.legend(facecolor='#0a0e1a', edgecolor='white', labelcolor='white')
+
+        st.markdown("<h4 style='text-align: center; color: #7eb8d4; margin-top: 30px;'> Son 24 Saatin Veri Özeti</h4>",
+                    unsafe_allow_html=True)
+
+        gosterilecek_sutunlar = ['Yil', 'Gun_No', 'Saat', 'Scalar_B', 'Bz', 'Yogunluk', 'Hiz', 'Kp']
+        son_24_veri = df[gosterilecek_sutunlar].tail(24)
+
+        st.dataframe(son_24_veri, use_container_width=True, hide_index=True)
+        st.pyplot(fig)
+    except FileNotFoundError:
+        st.error("❌ 'fırtınatahmın3.txt' veri dosyası bulunamadı!")
+    except Exception as e:
+        st.error(f"❌ Bir hata oluştu: {e}")
+
+elif st.session_state.sayfa == "Çalışmamız Hakkında":
+
+    st.markdown(f"{baslik_stili}<b>ÇALIŞMAMIZ HAKKINDA</b></div>", unsafe_allow_html=True)
+    st.markdown("""
+            <div style="
+                background: rgba(1, 28, 70, 0.25);
+                backdrop-filter: blur(10px);
+                padding: 50px;
+                border-radius: 15px;
+                color: white;
+                text-align: center;
+                font-size: 20px; 
+                line-height: 1.7; 
+            ">  
+            Güneş fırtınaları ve taçküre kütle atımları, Güneş rüzgarındaki parçacık akısını arttırmakta ve Dünya’mızın jeomanyetik alanını
+            etkileyebilmektedir. Manyetik alan sapmalarının büyüklükleri 3 saatlik dilimlerle lokal olarak “K” ve küresel olarak “Kp” 
+            indisleriyle 1 ile 9 arasında ifade edilmektedir. Kp indisinin hesaplanması, Dünya’da 1938’den beri ölçüm almaya devam eden ve 
+            INTERMAGNET’in standartlarını sağlayan 13 adet “subauroral” gözlemevinden gelen K indisi verilerinin birleştirilmesiyle sağlanır.<br><br>
+            </div>
+            """, unsafe_allow_html=True)
+
+
+
+
+
+elif st.session_state.sayfa == "Güneş Fırtınıları Hakkında ?":
+
+    st.markdown(f"{baslik_stili}<b>GÜNEŞ FIRTINALARI NEDİR?</b></div>", unsafe_allow_html=True)
+
+    sol_kolon, sag_kolon = st.columns([1, 1.2])
+
+    with sol_kolon:
+        st.image("965411-1275953750.png", use_container_width=True)
+        st.image("87dafd4b-49bc-ec11-810c-a0369f7d1486.png", use_container_width=True)
+
+    with sag_kolon:
+        st.markdown("""
+                <div style="
+                    background: rgba(1, 28, 70, 0.4); 
+                    backdrop-filter: blur(10px);     
+                    padding: 68px 55px;
+                    border-radius: 15px;
+                    border: 1px solid rgba(126, 184, 212, 0.2); 
+                    color: #e0e6ed;
+                    text-align: justify; 
+                    font-size: 17px; 
+                    line-height: 1.7; 
+                    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+                    height: 100%;
+                ">  
+                <p><b style="color: #FFFFFF; font-size: 19px;">Güneş patlamaları</b>, Güneş'in yüzeyindeki manyetik enerjinin aniden açığa çıkmasıyla oluşan devasa olaylardır. Dünya'dan doğrudan görülemeseler de kutup ışıkları (Aurora) gibi büyüleyici etkilere sebep olurlar.</p>
+
+                <p>Bu aktiviteler sabit değildir; 11 yıllık döngüler halinde dalgalanır. <span style="color: #e1c43a; font-weight: bold;">Güneş maksimumu</span> evresinde bu patlamalar zirveye ulaşır.</p>
+
+                <p>Bu kritik dönemlerde yayılan yüksek radyasyon ve yüklü parçacıklar; <b>uydu haberleşmesi, GPS sinyalleri ve elektrik şebekeleri</b> üzerinde ciddi aksamalara yol açma potansiyeline sahiptir.</p>
+                Dünya üzerindeki cihazlar aynı düzeyde korumaya sahip olmasa da, cihazlarınızı ve verilerinizi korumak için yapabileceğiniz bazı şeyler vardır; bunlar arasında şunlar yer almaktadır
+                Güneş aktivitesi raporlarını takip edin ve potansiyel tehlikeli aktivite olduğunda elektronik cihazların fişini çekin.
+                Verilerinizin yedeklerini, fişi çekilmiş ve kapalı harici sabit disklere oluşturun .
+                Cep telefonları ve pilli radyolar gibi yedek elektronik eşyaları, Faraday kutusu gibi korumalı bir kap içinde saklayın.
+                </div>
+                """, unsafe_allow_html=True)
+
+elif st.session_state.sayfa == "Hakkımızda":
+
+    st.markdown(f"{baslik_stili}<b>HAKKIMIZDA (PROJE EKİBİ)</b></div>", unsafe_allow_html=True)
+    st.write("<br>", unsafe_allow_html=True)
+
+    kisi1, kisi2, kisi3, kisi4 = st.columns(4)
+
+    kart_stili = """
+    <div style="
+        background-color: rgba(1, 28, 70, 0.4); 
+        border: 1px solid #1e3a5f; 
+        border-radius: 10px; 
+        padding: 20px; 
+        text-align: center; 
+        height: 380px; 
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    ">
+    """
+
+    with kisi1:
+        st.markdown("""
+        <h4 style='color: #FFFFFF; margin-top: 15px; margin-bottom: 5px;'>Mehmet Akif  YALDIZ</h4>
+        <p style='color: #7eb8d4; font-size: 14px; margin-bottom: 5px;'><b>Nişantaşı Üniversitesi</b></p>
+        <p style='color: #c8d8e8; font-size: 13px; margin-bottom: 15px;'><i>Veri Bilimi ve Analitiği</i></p>
+        <p style='color: #a8b8cc; font-size: 15px; line-height: 1.6;'>Makine öğrenimi geliştiricisi.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with kisi2:
+        st.markdown("""
+        <h4 style='color: #FFFFFF; margin-top: 15px; margin-bottom: 5px;'>Eyüp Efe GÜR</h4>
+        <p style='color: #7eb8d4; font-size: 14px; margin-bottom: 5px;'><b>Nişantaşı Üniversitesi</b></p>
+        <p style='color: #c8d8e8; font-size: 13px; margin-bottom: 15px;'><i>Bilişim Sistemleri ve Teknolojileri</i></p>
+        <p style='color: #a8b8cc; font-size: 15px; line-height: 1.6;'>Web/Arayüz geliştiricisi</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with kisi3:
+        st.markdown("""
+        <h4 style='color: #FFFFFF; margin-top: 15px; margin-bottom: 5px;'>Halil İbrahim ARSLAN</h4>
+        <p style='color: #7eb8d4; font-size: 14px; margin-bottom: 5px;'><b>Nişantaşı Üniversitesi</b></p>
+        <p style='color: #c8d8e8; font-size: 13px; margin-bottom: 15px;'><i>Bilişim Sistemleri ve Teknolojileri</i></p>
+        <p style='color: #a8b8cc; font-size: 15px; line-height: 1.6;'>Web/Arayüz geliştiricisi</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with kisi4:
+        st.markdown("""
+        <h4 style='color: #FFFFFF; margin-top: 15px; margin-bottom: 5px;'>Kenan TERZİOĞLU</h4>
+        <p style='color: #7eb8d4; font-size: 14px; margin-bottom: 5px;'><b>Nişantaşı Üniversitesi</b></p>
+        <p style='color: #c8d8e8; font-size: 13px; margin-bottom: 15px;'><i>Yazılım Geliştirme</i></p>
+        <p style='color: #a8b8cc; font-size: 15px; line-height: 1.6;'>Makine öğrenimi geliştiricisi</p>
+        </div>
+        """, unsafe_allow_html=True)
