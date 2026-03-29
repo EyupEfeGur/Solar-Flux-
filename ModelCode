@@ -318,7 +318,6 @@ elif st.session_state.sayfa == "Veri İşleme":
         st.error(f"❌ Bir hata oluştu: {e}")
 
 elif st.session_state.sayfa == "Çalışmamız Hakkında":
-
     st.markdown(f"{baslik_stili}<b>ÇALIŞMAMIZ HAKKINDA</b></div>", unsafe_allow_html=True)
     st.markdown("""
             <div style="
@@ -331,13 +330,15 @@ elif st.session_state.sayfa == "Çalışmamız Hakkında":
                 font-size: 20px; 
                 line-height: 1.7; 
             ">  
-            Güneş fırtınaları ve taçküre kütle atımları, Güneş rüzgarındaki parçacık akısını arttırmakta ve Dünya’mızın jeomanyetik alanını
-            etkileyebilmektedir. Manyetik alan sapmalarının büyüklükleri 3 saatlik dilimlerle lokal olarak “K” ve küresel olarak “Kp” 
-            indisleriyle 1 ile 9 arasında ifade edilmektedir. Kp indisinin hesaplanması, Dünya’da 1938’den beri ölçüm almaya devam eden ve 
-            INTERMAGNET’in standartlarını sağlayan 13 adet “subauroral” gözlemevinden gelen K indisi verilerinin birleştirilmesiyle sağlanır.<br><br>
+            Bu proje, karmaşık veri setlerini anlamlı içgörülere dönüştürmek amacıyla <b>Makine Öğrenimi (Machine Learning)</b> algoritmaları ve modern web teknolojileri harmanlanarak geliştirilmiştir.<br><br>
+
+            Arka planda çalışan analitik altyapımız, büyük veri yığınlarındaki gizli örüntüleri tespit etmek, veriyi anlamlandırmak ve karar alma süreçlerini destekleyen akıllı sonuçlar üretmek üzere kurgulanmıştır. Sadece geçmiş verileri raporlamakla kalmaz, aynı zamanda veriden öğrenen bir yaklaşım benimser.<br><br>
+
+            Geliştirilen bu veri bilimi altyapısının son kullanıcı ile buluştuğu nokta ise <b>Streamlit</b> ile inşa edilen bu dinamik veri panelidir (dashboard). Streamlit, karmaşık Python kodlarını ve makine öğrenimi çıktılarını hızlı, etkileşimli ve görsel olarak zengin bir web arayüzüne dönüştürmemizi sağlamıştır.<br><br>
+
+            Panel yapımında ana odak noktamız; kullanıcı dostu ve sade bir deneyim sunmaktır. Bu etkileşimli arayüz sayesinde, teknik detaylarda boğulmadan veriler arasında anlık geçişler yapabilir, hesaplama çıktılarını görsel paneller üzerinden saniyeler içinde inceleyebilir ve karmaşık süreçleri tek bir ekrandan kolayca yönetebilirsiniz.
             </div>
             """, unsafe_allow_html=True)
-
 
 
 
